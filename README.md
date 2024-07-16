@@ -15,6 +15,10 @@ GitLab Artifactory Deployer written in Go.
 - .. Download the zip file from GitLab ... TODO
 - Craete logging on routes, exclude `favicon.ico`
 
+## Development
+
+Run: `gow run .`
+
 ### Setup GitLab Artifact Deployer
 
 #### Environment variables options
