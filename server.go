@@ -1,10 +1,12 @@
 package main
 
 import (
+    "os"
     "encoding/json"
     "fmt"
     "log"
     "net/http"
+    "github.com/joho/godotenv"
 )
 
 // Define a struct to represent the JSON payload
@@ -19,6 +21,10 @@ func gitlabHandler(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
         return
     }
+
+    secretToken := os.Getenv("GITLAB_SECRET_TOKEN")
+    // print secret token to console
+    fmt.Println("Code: ", secretToken)
 
     var payload GitLabPayload
 
@@ -40,8 +46,16 @@ func gitlabHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+    err := godotenv.Load()
+    if err != nil {
+        log.Fatal("Error loading .env file")
+    }
+    if os.Getenv("GITLAB_SECRET_TOKEN") == "" {
+        log.Fatal("GITLAB_SECRET_TOKEN environment variable is NOT set but is required!")
+    }
+    
     // Register the /gitlab route with the handler
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("Hello, World!"))
 		})
     http.HandleFunc("/gitlab", gitlabHandler)
