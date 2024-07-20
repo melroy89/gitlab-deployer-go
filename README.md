@@ -2,10 +2,6 @@
 
 GitLab Artifactory Deployer written in Go.
 
-- Express alike in Go (error when `GITLAB_SECRET_TOKEN` is not set), accept JSON requests
-- `/gitlab` post route for GitLab webhook
-- Retrieve `X-Gitlab-Token` header from request
-- Compare `X-Gitlab-Token` with `GITLAB_SECRET_TOKEN`
 - Check for `object_kind` key in request body
 - Check if object_kind string is equal to `deployment`
 - Retrieve `project.id` from body as well now or when `PROJECT_ID` is set use that instead
