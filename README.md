@@ -2,9 +2,6 @@
 
 GitLab Artifactory Deployer written in Go.
 
-- Check for `object_kind` key in request body
-- Check if object_kind string is equal to `deployment`
-- Retrieve `project.id` from body as well now or when `PROJECT_ID` is set use that instead
 - Rerieve job id from `deployable_id` key in request body
 - Retrieve the status from `status` key in request body
 - If status is `success` wait 3 seconds to let the zip process finish and then download the zip file
