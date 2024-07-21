@@ -62,14 +62,14 @@ func gitlabHandler(w http.ResponseWriter, r *http.Request) {
 	remoteIp := strings.Split(r.RemoteAddr, ":")[0]
 	host := strings.Split(r.Host, ":")[0]
 	if r.Method != http.MethodPost {
-		log.Printf("%s - %s ERROR: Invalid request method\n", remoteIp, host)
+		log.Printf("%s - %s - ERROR: Invalid request method\n", remoteIp, host)
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
 
 	gitlabToken := r.Header.Get("X-Gitlab-Token")
 	if gitlabToken != secretToken {
-		log.Printf("%s - %s ERROR: Invalid secret GitLab token\n", remoteIp, host)
+		log.Printf("%s - %s - ERROR: Invalid secret GitLab token\n", remoteIp, host)
 		http.Error(w, "Invalid secret GitLab token", http.StatusUnauthorized)
 		return
 	}
@@ -78,12 +78,11 @@ func gitlabHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse the JSON body
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		log.Printf("%s - %s ERROR: Unable to parse JSON\n", remoteIp, host)
+		log.Printf("%s - %s - ERROR: Unable to parse JSON\n", remoteIp, host)
 		log.Println(err)
 		http.Error(w, "Unable to parse the JSON", http.StatusBadRequest)
 		return
 	}
-	log.Printf("%s - %s Incoming %s GitLab request\n", remoteIp, host, r.Method)
 
 	// Only continue if the object_kind is "deployment"
 	if payload.ObjectKind == "deployment" {
@@ -98,18 +97,18 @@ func gitlabHandler(w http.ResponseWriter, r *http.Request) {
 		status := payload.Status
 		switch status {
 		case "running":
-			log.Printf("%s - %s Deployment job is running, project ID: %d\n", remoteIp, host, projectId)
+			log.Printf("%s - %s - Deployment job is running, project ID: %d\n", remoteIp, host, projectId)
 		case "failed":
-			log.Printf("%s - %s Deployment job failed, project ID: %d\n", remoteIp, host, projectId)
+			log.Printf("%s - %s - Deployment job failed, project ID: %d\n", remoteIp, host, projectId)
 		case "canceled":
-			log.Printf("%s - %s Deployment job canceled, project ID: %d\n", remoteIp, host, projectId)
+			log.Printf("%s - %s - Deployment job canceled, project ID: %d\n", remoteIp, host, projectId)
 		case "success":
 			if useJobName == "yes" {
-				log.Printf("%s - %s Deployment job successful, project ID: %d, triggered by: %s. Waiting 3s before downloading...\n",
+				log.Printf("%s - %s - Deployment job successful, project ID: %d, triggered by: %s. Waiting 3s before downloading...\n",
 					remoteIp, host, projectId, payload.User.Name)
 				go downloadArtifact(projectId, 0)
 			} else {
-				log.Printf("%s - %s Deployment job successful, project ID: %d, job ID: %d, triggered by: %s. Waiting 3s before downloading...\n",
+				log.Printf("%s - %s - Deployment job successful, project ID: %d, job ID: %d, triggered by: %s. Waiting 3s before downloading...\n",
 					remoteIp, host, projectId, jobId, payload.User.Name)
 				go downloadArtifact(projectId, jobId)
 			}
