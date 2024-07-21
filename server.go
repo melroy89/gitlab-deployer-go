@@ -61,14 +61,14 @@ func gitlabHandler(w http.ResponseWriter, r *http.Request) {
 	remoteIp := strings.Split(r.RemoteAddr, ":")[0]
 	host := strings.Split(r.Host, ":")[0]
 	if r.Method != http.MethodPost {
-		fmt.Printf("%s - %s [%s] ERROR: Invalid request method\n", remoteIp, host, time.Now().Format(format))
+		log.Printf("%s - %s ERROR: Invalid request method\n", remoteIp, host)
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
 
 	gitlabToken := r.Header.Get("X-Gitlab-Token")
 	if gitlabToken != secretToken {
-		fmt.Printf("%s - %s [%s] ERROR: Invalid secret GitLab token\n", remoteIp, host, time.Now().Format(format))
+		log.Printf("%s - %s ERROR: Invalid secret GitLab token\n", remoteIp, host)
 		http.Error(w, "Invalid secret GitLab token", http.StatusUnauthorized)
 		return
 	}
@@ -77,12 +77,12 @@ func gitlabHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse the JSON body
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		fmt.Printf("%s - %s [%s] ERROR: Unable to parse JSON\n", remoteIp, host, time.Now().Format(format))
+		log.Printf("%s - %s ERROR: Unable to parse JSON\n", remoteIp, host)
 		log.Println(err)
 		http.Error(w, "Unable to parse the JSON", http.StatusBadRequest)
 		return
 	}
-	fmt.Printf("%s - %s [%s] Incoming %s GitLab request\n", remoteIp, host, time.Now().Format(format), r.Method)
+	log.Printf("%s - %s Incoming %s GitLab request\n", remoteIp, host, r.Method)
 
 	// Only continue if the object_kind is "deployment"
 	if payload.ObjectKind == "deployment" {
@@ -97,19 +97,19 @@ func gitlabHandler(w http.ResponseWriter, r *http.Request) {
 		status := payload.Status
 		switch status {
 		case "running":
-			fmt.Printf("%s - %s [%s] Deployment job is running, project ID: %d\n", remoteIp, host, time.Now().Format(format), projectId)
+			log.Printf("%s - %s Deployment job is running, project ID: %d\n", remoteIp, host, projectId)
 		case "failed":
-			fmt.Printf("%s - %s [%s] Deployment job failed, project ID: %d\n", remoteIp, host, time.Now().Format(format), projectId)
+			log.Printf("%s - %s Deployment job failed, project ID: %d\n", remoteIp, host, projectId)
 		case "canceled":
-			fmt.Printf("%s - %s [%s] Deployment job canceled, project ID: %d\n", remoteIp, host, time.Now().Format(format), projectId)
+			log.Printf("%s - %s Deployment job canceled, project ID: %d\n", remoteIp, host, projectId)
 		case "success":
 			if useJobName == "yes" {
-				fmt.Printf("%s - %s [%s] Deployment job successful, project ID: %d, triggered by: %s. Waiting 3s before downloading...\n",
-					remoteIp, host, time.Now().Format(format), projectId, payload.User.Name)
+				log.Printf("%s - %s Deployment job successful, project ID: %d, triggered by: %s. Waiting 3s before downloading...\n",
+					remoteIp, host, projectId, payload.User.Name)
 				go downloadArtifact(projectId, 0)
 			} else {
-				fmt.Printf("%s - %s [%s] Deployment job successful, project ID: %d, job ID: %d, triggered by: %s. Waiting 3s before downloading...\n",
-					remoteIp, host, time.Now().Format(format), projectId, jobId, payload.User.Name)
+				log.Printf("%s - %s Deployment job successful, project ID: %d, job ID: %d, triggered by: %s. Waiting 3s before downloading...\n",
+					remoteIp, host, projectId, jobId, payload.User.Name)
 				go downloadArtifact(projectId, jobId)
 			}
 		}
@@ -136,7 +136,7 @@ func downloadArtifact(projectId int, jobId int) {
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Printf("[%s] Error creating request: %v\n", time.Now().Format(format), err)
+		log.Printf("Error creating request: %v\n", err)
 		return
 	}
 
@@ -147,32 +147,32 @@ func downloadArtifact(projectId int, jobId int) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("[%s] Error making http request: %v\n", time.Now().Format(format), err)
+		log.Printf("Error making http request: %v\n", err)
 		return
 	}
 	defer res.Body.Close() // Close the body resource when error != nil
 	if res.StatusCode != http.StatusOK {
-		fmt.Printf("[%s] downloading artifact (status code: %d), URL: %s\n", time.Now().Format(format), res.StatusCode, res.Request.URL)
+		log.Printf("downloading artifact (status code: %d), URL: %s\n", res.StatusCode, res.Request.URL)
 		return
 	}
 
 	// I closed the body resource in the previous line, so we may need to move that code down..
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
-		fmt.Printf("[%s] Error reading the body data: %v.\n", time.Now().Format(format), err)
+		log.Printf("Error reading the body data: %v.\n", err)
 		return
 	}
 
-	fmt.Printf("[%s] Downloaded of artifact successfully, project ID: %d.\n", time.Now().Format(format), projectId)
+	log.Printf("Downloaded of artifact successfully, project ID: %d.\n", projectId)
 
 	// Unzip the data from resBody
 	err = unzip(resBody, destinationPath)
 	if err != nil {
-		log.Printf("[%s] Failed to unzip file: %v", time.Now().Format(format), err)
+		log.Printf("Failed to unzip file: %v", err)
 		return
 	}
 
-	fmt.Printf("[%s] Unzip of artifact went succesful, project ID: %d. Done!\n", time.Now().Format(format), projectId)
+	log.Printf("Unzipping of artifact went succesfully, project ID: %d. Done!\n", projectId)
 }
 
 func unzip(data []byte, dest string) error {
@@ -221,6 +221,10 @@ func unzip(data []byte, dest string) error {
 }
 
 func main() {
+	// Configure the logger to include date and time
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+
+	// Load .env file
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -260,6 +264,6 @@ func main() {
 	http.HandleFunc("/gitlab", gitlabHandler)
 
 	// Start the server
-	fmt.Println("INFO: Server is running at: http://localhost:8080")
+	log.Println("INFO: Server is running at: http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
