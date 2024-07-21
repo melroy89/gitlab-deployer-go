@@ -18,6 +18,7 @@ import (
 )
 
 var (
+	gitlabApiPrefix   = "api/v4"
 	secretToken       string
 	projectIdOverride string
 	useJobName        string
@@ -27,9 +28,6 @@ var (
 	repoBranch        string
 	destinationPath   string
 )
-
-var format = "2006-01-02 15:04:05.000000"
-var gitlabApiPrefix = "api/v4"
 
 type GitLabPayload struct {
 	ObjectKind             string `json:"object_kind"`
@@ -264,6 +262,6 @@ func main() {
 	http.HandleFunc("/gitlab", gitlabHandler)
 
 	// Start the server
-	log.Println("INFO: Server is running at: http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Println("INFO: Server is running at: http://localhost:3042")
+	log.Fatal(http.ListenAndServe(":3042", nil))
 }
