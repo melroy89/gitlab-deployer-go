@@ -257,7 +257,7 @@ func main() {
 
 	// Register the /gitlab route with the handler
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello, World!"))
+		w.Write([]byte("Welcome at GitLab Artifact Deployer!"))
 	})
 	http.HandleFunc("/gitlab", gitlabHandler)
 
