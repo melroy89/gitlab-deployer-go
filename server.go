@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -18,15 +19,17 @@ import (
 )
 
 var (
-	gitlabApiPrefix   = "api/v4"
-	secretToken       string
-	projectIdOverride string
-	useJobName        string
-	jobName           string
-	gitlabHost        string
-	gitlabAccessToken string
-	repoBranch        string
-	destinationPath   string
+	gitlabApiPrefix       = "api/v4"
+	secretToken           string
+	projectIdOverride     string
+	useJobName            string
+	jobName               string
+	gitlabHost            string
+	gitlabAccessToken     string
+	repoBranch            string
+	destinationPath       string
+	postDeploymentCommand string
+	postDeploymentCWD     string
 )
 
 type GitLabPayload struct {
@@ -171,6 +174,21 @@ func downloadArtifact(projectId int, jobId int) {
 	}
 
 	log.Printf("Unzipping of artifact went succesfully, project ID: %d. Done!\n", projectId)
+
+	// Execute the post-deployment command
+	if postDeploymentCommand != "" {
+		log.Printf("Executing post-deployment command: %s\n", postDeploymentCommand)
+		cmd := exec.Command("bash", "-c", postDeploymentCommand)
+		cmd.Dir = postDeploymentCWD
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err := cmd.Run()
+		if err != nil {
+			log.Printf("Error executing post-deployment command: %v\n", err)
+			return
+		}
+		log.Println("Post-deployment command executed successfully.")
+	}
 }
 
 func unzip(data []byte, dest string) error {
@@ -235,6 +253,8 @@ func main() {
 	gitlabAccessToken = os.Getenv("ACCESS_TOKEN")
 	repoBranch = os.Getenv("REPO_BRANCH")
 	destinationPath = os.Getenv("DESTINATION_PATH")
+	postDeploymentCommand = os.Getenv("POST_DEPLOYMENT_COMMAND")
+	postDeploymentCWD = os.Getenv("POST_DEPLOYMENT_CWD")
 
 	if secretToken == "" {
 		log.Fatal("GITLAB_SECRET_TOKEN environment variable is NOT set but is required!")
@@ -253,6 +273,9 @@ func main() {
 	}
 	if destinationPath == "" {
 		destinationPath = "dest"
+	}
+	if postDeploymentCWD == "" {
+		postDeploymentCWD = destinationPath
 	}
 
 	// Register the /gitlab route with the handler
