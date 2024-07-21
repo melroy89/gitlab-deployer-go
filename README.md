@@ -2,12 +2,6 @@
 
 GitLab Artifactory Deployer written in Go.
 
-- Rerieve job id from `deployable_id` key in request body
-- Retrieve the status from `status` key in request body
-- If status is `success` wait 3 seconds to let the zip process finish and then download the zip file
-- .. Download the zip file from GitLab ... TODO
-- Craete logging on routes, exclude `favicon.ico`
-
 ## Development
 
 Run: `gow run .`
