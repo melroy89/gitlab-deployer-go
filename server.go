@@ -162,7 +162,7 @@ func downloadArtifact(projectId int, jobId int) {
 	// Create a temporary file to store the response body
 	tmpFile, err := os.CreateTemp("", "temp.zip")
 	if err != nil {
-		fmt.Println("Error creating temporary file:", err)
+		log.Printf("Error creating temporary file: %v\n", err)
 		return
 	}
 	defer os.Remove(tmpFile.Name()) // Clean up the temporary file afterwards
@@ -170,7 +170,7 @@ func downloadArtifact(projectId int, jobId int) {
 	// Copy the response body to the temporary file
 	_, err = io.Copy(tmpFile, res.Body)
 	if err != nil {
-		fmt.Println("Error copying response body to temporary file:", err)
+		log.Printf("Error copying response body to temporary file: %v\n", err)
 		return
 	}
 	tmpFile.Close()
