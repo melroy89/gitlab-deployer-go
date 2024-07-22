@@ -215,16 +215,18 @@ func unzip(data []byte, dest string) error {
 		if err != nil {
 			return fmt.Errorf("failed to open file: %w", err)
 		}
-		defer outFile.Close()
 
 		// Extract the file
 		rc, err := file.Open()
 		if err != nil {
+			outFile.Close()
 			return fmt.Errorf("failed to open zip file: %w", err)
 		}
-		defer rc.Close()
-
 		_, err = io.Copy(outFile, rc)
+
+		// Close the file and its reader
+		outFile.Close()
+		rc.Close()
 		if err != nil {
 			return fmt.Errorf("failed to copy file contents: %w", err)
 		}
