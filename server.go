@@ -152,7 +152,7 @@ func downloadArtifact(projectId int, jobId int) {
 	}
 	defer res.Body.Close() // Close the body resource when error != nil
 	if res.StatusCode != http.StatusOK {
-		log.Printf("downloading artifact (status code: %d), URL: %s\n", res.StatusCode, res.Request.URL)
+		log.Printf("Failed downloading artifact (status code: %d), URL: %s\n", res.StatusCode, res.Request.URL)
 		return
 	}
 
@@ -215,18 +215,16 @@ func unzip(data []byte, dest string) error {
 		if err != nil {
 			return fmt.Errorf("failed to open file: %w", err)
 		}
+		defer outFile.Close()
 
 		// Extract the file
 		rc, err := file.Open()
 		if err != nil {
-			outFile.Close()
 			return fmt.Errorf("failed to open zip file: %w", err)
 		}
-		_, err = io.Copy(outFile, rc)
+		defer rc.Close()
 
-		// Close the file and its reader
-		outFile.Close()
-		rc.Close()
+		_, err = io.Copy(outFile, rc)
 		if err != nil {
 			return fmt.Errorf("failed to copy file contents: %w", err)
 		}
