@@ -32,6 +32,10 @@ var (
 	postDeploymentCWD     string
 )
 
+var httpClient = &http.Client{
+	Timeout: 30 * time.Second,
+}
+
 type GitLabPayload struct {
 	ObjectKind             string `json:"object_kind"`
 	Status                 string `json:"status"`
@@ -144,13 +148,13 @@ func downloadArtifact(projectId int, jobId int) {
 		req.Header.Set("PRIVATE-TOKEN", gitlabAccessToken)
 	}
 
-	client := &http.Client{}
-	res, err := client.Do(req)
+	res, err := httpClient.Do(req)
 	if err != nil {
 		log.Printf("Error making http request: %v\n", err)
 		return
 	}
-	defer res.Body.Close() // Close the body resource when error != nil
+	defer res.Body.Close() // Close the body resource always
+
 	if res.StatusCode != http.StatusOK {
 		log.Printf("Failed downloading artifact (status code: %d), URL: %s\n", res.StatusCode, res.Request.URL)
 		return
