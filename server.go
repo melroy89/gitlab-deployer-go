@@ -211,22 +211,22 @@ func unzip(data []byte, dest string) error {
 		if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
 			return fmt.Errorf("failed to create directory for file: %w", err)
 		}
-		outFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
+		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
 		if err != nil {
 			return fmt.Errorf("failed to open file: %w", err)
 		}
 
 		// Extract the file
-		rc, err := file.Open()
+		srcFile, err := file.Open()
 		if err != nil {
-			outFile.Close()
+			dstFile.Close()
 			return fmt.Errorf("failed to open zip file: %w", err)
 		}
-		_, err = io.Copy(outFile, rc)
+		_, err = io.Copy(dstFile, srcFile)
 
-		// Close the file and its reader
-		outFile.Close()
-		rc.Close()
+		// Close the open files
+		dstFile.Close()
+		srcFile.Close()
 		if err != nil {
 			return fmt.Errorf("failed to copy file contents: %w", err)
 		}
