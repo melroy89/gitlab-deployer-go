@@ -184,7 +184,7 @@ func downloadArtifact(projectId int, jobId int) {
 		return
 	}
 
-	log.Printf("Unzipping of artifact went succesfully, project ID: %d. Done!\n", projectId)
+	log.Printf("Unzipping of artifact went successfully, project ID: %d. Done!\n", projectId)
 
 	// Execute the post-deployment command
 	if postDeploymentCommand != "" {
