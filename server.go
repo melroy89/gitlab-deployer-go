@@ -2,7 +2,6 @@ package main
 
 import (
 	"archive/zip"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -160,17 +159,26 @@ func downloadArtifact(projectId int, jobId int) {
 		return
 	}
 
-	// I closed the body resource in the previous line, so we may need to move that code down..
-	resBody, err := io.ReadAll(res.Body)
+	// Create a temporary file to store the response body
+	tmpFile, err := os.CreateTemp("", "temp.zip")
 	if err != nil {
-		log.Printf("Error reading the body data: %v.\n", err)
+		fmt.Println("Error creating temporary file:", err)
 		return
 	}
+	defer os.Remove(tmpFile.Name()) // Clean up the temporary file afterwards
+
+	// Copy the response body to the temporary file
+	_, err = io.Copy(tmpFile, res.Body)
+	if err != nil {
+		fmt.Println("Error copying response body to temporary file:", err)
+		return
+	}
+	tmpFile.Close()
 
 	log.Printf("Downloaded of artifact successfully, project ID: %d.\n", projectId)
 
 	// Unzip the data from resBody
-	err = unzip(resBody, destinationPath)
+	err = unzip(tmpFile.Name(), destinationPath)
 	if err != nil {
 		log.Printf("Failed to unzip file: %v", err)
 		return
@@ -194,11 +202,12 @@ func downloadArtifact(projectId int, jobId int) {
 	}
 }
 
-func unzip(data []byte, dest string) error {
-	reader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+func unzip(filename string, dest string) error {
+	reader, err := zip.OpenReader(filename)
 	if err != nil {
 		return fmt.Errorf("failed to create zip reader: %w", err)
 	}
+	defer reader.Close()
 
 	for _, file := range reader.File {
 		filePath := filepath.Join(dest, file.Name)
