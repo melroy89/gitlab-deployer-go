@@ -290,10 +290,10 @@ func main() {
 		postDeploymentCWD = destinationPath
 	}
 
-	// Register the /gitlab route with the handler
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Welcome at GitLab Artifact Deployer!"))
 	})
+	// Register the /gitlab route with the handler
 	http.HandleFunc("/gitlab", gitlabHandler)
 
 	// Start the server
