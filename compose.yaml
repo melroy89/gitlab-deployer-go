@@ -1,10 +1,10 @@
 services:
-  gitlab-deployer:
-    image: danger89/gitlab-deployer-go:latest
-    container_name: gitlab-deployer
+  artifact-deployer:
+    image: registry.melroy.org/melroy/gitlab-artifact-deployer-go/artifact-deployer:latest
+    container_name: artifact-deployer
     restart: always
     networks:
-      - gitlab_deployer_external_network
+      - artifact_deployer_external_network
     volumes:
       # Mount the local .env and dest folder (create a local dest folder first or update to another destination folder)
       # Be sure the destination host folder as the correct rights under Linux (UID: 1000 and GID 1000)
@@ -20,4 +20,4 @@ services:
   # Do not forget to change the host port, since you can't have two services listening on the same port, eg: `"127.0.0.1:3043:3042"
 
 networks:
-  gitlab_deployer_external_network:
+  artifact_deployer_external_network:
