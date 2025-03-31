@@ -12,8 +12,8 @@ RUN go mod download && go mod verify
 
 COPY *.go ./
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /artifact-deployer
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/artifact-deployer
 
 EXPOSE 3042
 
-CMD ["/artifact-deployer"]
+CMD ["/app/artifact-deployer"]
