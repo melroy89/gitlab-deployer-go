@@ -1,4 +1,15 @@
-image: golang:latest
+default:
+  image: golang:1.24
+
+  cache:
+    key:
+      files:
+        - go.mod
+    paths:
+      - .go/pkg/mod/
+
+variables:
+  GOPATH: $CI_PROJECT_DIR/.go
 
 stages:
   - test
@@ -10,6 +21,11 @@ format:
     - go fmt $(go list ./... | grep -v /vendor/)
     - go vet $(go list ./... | grep -v /vendor/)
 
+go-mod-tidy:
+  stage: test
+  script:
+    - go mod tidy -diff
+
 build:
   stage: build
   script:
@@ -18,3 +34,4 @@ build:
     paths:
       - artifact-deployer
     expire_in: 1 week
+
