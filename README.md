@@ -59,7 +59,7 @@ Otherwise the GitLab Artifact Deployer is unable to extract the downloaded artif
 
 ---
 
-Instead of using Docker Compose, you could also use `docker run` but that is **not** advised. Anyway, here is an example of docker run:
+Instead of using Docker Compose, you could also use `docker run` but that is **not** advised. Anyway, here is an example of `docker run` command:
 
 ```sh
 docker run -it -v $(pwd)/.env:/app/.env -v $(pwd)/deployment:/app/dest -p 3042:3042  --rm danger89/gitlab-deployer-go:latest
