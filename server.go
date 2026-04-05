@@ -29,6 +29,7 @@ var (
 	destinationPath       string
 	postDeploymentCommand string
 	postDeploymentCWD     string
+	tempDir               string
 )
 
 var httpClient = &http.Client{
@@ -160,7 +161,7 @@ func downloadArtifact(projectId int, jobId int) {
 	}
 
 	// Create a temporary file to store the response body
-	tmpFile, err := os.CreateTemp("", "temp.zip")
+	tmpFile, err := os.CreateTemp(tempDir, "temp.zip")
 	if err != nil {
 		log.Printf("Error creating temporary file: %v\n", err)
 		return
@@ -177,7 +178,7 @@ func downloadArtifact(projectId int, jobId int) {
 
 	log.Printf("Downloaded of artifact successfully, project ID: %d.\n", projectId)
 
-	// Unzip the data from resBody
+	// Unzip the data from res.Body (zip file)
 	err = unzip(tmpFile.Name(), destinationPath)
 	if err != nil {
 		log.Printf("Failed to unzip file: %v", err)
@@ -267,6 +268,7 @@ func main() {
 	destinationPath = os.Getenv("DESTINATION_PATH")
 	postDeploymentCommand = os.Getenv("POST_DEPLOYMENT_COMMAND")
 	postDeploymentCWD = os.Getenv("POST_DEPLOYMENT_CWD")
+	tempDir = os.Getenv("TEMP_DIR")
 
 	if secretToken == "" {
 		log.Fatal("GITLAB_SECRET_TOKEN environment variable is NOT set but is required!")

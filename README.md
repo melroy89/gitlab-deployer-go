@@ -32,7 +32,7 @@ See below for all the available options, only the `GITLAB_SECRET_TOKEN` environm
 | `JOB_NAME`                | Job name to download artifact from, default: `deploy`                                              | no       |
 | `ACCESS_TOKEN`            | Access token, for private repository (not set by default)                                          | no       |
 | `DESTINATION_PATH`        | Destination path where the artifact zip content is extracted, default: `dest` folder               | no       |
-| `TEMP_FOLDER`             | Temporarily file path where the artifact zip is stored, default: `tmp` folder                      | no       |
+| `TEMP_DIR`                | Temporarily directory where the artifact zip is stored, default: `/tmp` directory                  | no       |
 | `POST_DEPLOYMENT_COMMAND` | Optional post-deployment command in the `POST_DEPLOYMENT_CWD`. Eg. `php spark cache:clear`         | no       |
 | `POST_DEPLOYMENT_CWD`     | Set the current working directory for the post-deployment command, default: `$DESTINATION_PATH`    | no       |
 
@@ -40,7 +40,7 @@ _Hint:_ Adapt the `.env` file to your settings (eg. `GITLAB_SECRET_TOKEN`), read
 
 _Hint:_ You can set `USE_JOB_NAME` to the string value `yes`, if you wish to retrieve the GitLab artifact using repository branch name (`REPO_BRANCH`) and job name (`JOB_NAME`). By default we use the job ID to fetch the artifact from GitLab. Job ID is retrieved from the webhook body request, similar to how the project ID is retrieved from the body request.
 
-_Hint:_ You do **NOT** need to change the `DESTINATION_PATH` environment variable (nor the `TEMP_FOLDER`). Instead try to leverage Docker volume mounting feature. So mount your host destination path to the `/app/dest` container path, see example in [compose.yaml](compose.yaml).
+_Hint:_ You do **NOT** need to change the `DESTINATION_PATH` environment variable (nor the `TEMP_DIR`). Instead try to leverage Docker volume mounting feature. So mount your host destination path to the `/app/dest` container path, see example in [compose.yaml](compose.yaml).
 
 _Hint:_ You can create a personal access token at your GitLab profile, when you need to set `ACCESS_TOKEN` (needed for private repositories).
 
