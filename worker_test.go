@@ -46,6 +46,13 @@ func TestProcessorPublishesCompleteBatchOnce(t *testing.T) {
 		t.Fatalf("ready=%#v requests=%d", ready, requests.Load())
 	}
 	readyPath := store.batchPath(stateReady, record.BatchID)
+	readyInfo, err := os.Stat(readyPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := readyInfo.Mode().Perm(); got != 0770 {
+		t.Fatalf("ready directory mode = %04o, want 0770", got)
+	}
 	data, err := os.ReadFile(filepath.Join(readyPath, "packages", "app.deb"))
 	if err != nil || string(data) != "package" {
 		t.Fatalf("ready payload: %q err=%v", data, err)

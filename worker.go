@@ -180,6 +180,12 @@ func (p *Processor) processClaimed(ctx context.Context, record *BatchRecord) err
 	if err := writeJSONFile(filepath.Join(extractedPath, "batch.json"), manifest, 0644); err != nil {
 		return err
 	}
+	// Keep an inherited downstream-consumer ACL writable when this directory is
+	// atomically handed off to ready/. The container's umask may otherwise
+	// reduce the ACL mask to read/execute only.
+	if err := os.Chmod(extractedPath, 0770); err != nil {
+		return err
+	}
 	if err := syncDirectory(extractedPath); err != nil {
 		return err
 	}
