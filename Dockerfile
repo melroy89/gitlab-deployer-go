@@ -1,4 +1,10 @@
-FROM golang:1.25
+FROM golang:1.27.1-trixie
+
+ARG VERSION=development
+ARG VCS_REF=unknown
+
+LABEL org.opencontainers.image.version=$VERSION \
+      org.opencontainers.image.revision=$VCS_REF
 
 ARG DEBIAN_FRONTEND=noninteractive
 

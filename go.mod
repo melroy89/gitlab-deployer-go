@@ -1,5 +1,5 @@
 module melroy.org/artifact-deployer
 
-go 1.21.1
+go 1.27.0
 
 require github.com/joho/godotenv v1.5.1

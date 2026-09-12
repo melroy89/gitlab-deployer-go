@@ -1,6 +1,6 @@
 services:
   artifact-deployer:
-    image: registry.melroy.org/melroy/gitlab-artifact-deployer-go/artifact-deployer:latest
+    image: ${ARTIFACT_DEPLOYER_IMAGE:-registry.melroy.org/melroy/gitlab-artifact-deployer-go/artifact-deployer:latest}
     container_name: artifact-deployer
     restart: always
     networks:
@@ -15,6 +15,22 @@ services:
       # If your service is running behind Nginx, you can make the service only lisen on localhost
       # using: "127.0.0.1:3042:3042"
       - "3042:3042"
+
+  artifact-deployer-batch:
+    profiles: ["batch"]
+    image: ${ARTIFACT_DEPLOYER_IMAGE:-registry.melroy.org/melroy/gitlab-artifact-deployer-go/artifact-deployer:latest}
+    container_name: artifact-deployer-batch
+    restart: always
+    networks:
+      - artifact_deployer_external_network
+    env_file:
+      - .env.batch
+    volumes:
+      # Persist the entire spool; the publisher may read ready/ but must copy a batch
+      # outside this mount before validation and publication.
+      - ./spool:/app/spool
+    ports:
+      - "127.0.0.1:3043:3042"
 
   # You could add multiple deployers services with different `.env` files and `dest` folders...
   # Do not forget to change the host port, since you can't have two services listening on the same port, eg: `"127.0.0.1:3043:3042"

@@ -1,6 +1,6 @@
-# GitLab Artifactory Deployer
+# GitLab Artifact Deployer
 
-GitLab Artifactory Deployer written in Go. This service will listen for completed GitLab Deployment jobs, retrieves the latest (build) artifact and deploys the artifact on the live production environment.
+GitLab Artifact Deployer is written in Go. This service listens for completed GitLab deployment jobs, retrieves the build artifact, and delivers it using direct or durable batch mode.
 
 By default GitLab Artifact Deployer will try to download the GitLab Artifact from the same deployment job as where the Webhook was triggered from. Then it will use the project ID and job ID from the webhook response body request. This project ID and job ID is then used to download the artifact file.
 
@@ -35,6 +35,56 @@ See below for all the available options, only the `GITLAB_SECRET_TOKEN` environm
 | `TEMP_DIR`                | Temporarily directory where the artifact zip is stored, default: `/tmp` directory                  | no       |
 | `POST_DEPLOYMENT_COMMAND` | Optional post-deployment command in the `POST_DEPLOYMENT_CWD`. Eg. `php spark cache:clear`         | no       |
 | `POST_DEPLOYMENT_CWD`     | Set the current working directory for the post-deployment command, default: `$DESTINATION_PATH`    | no       |
+| `DEPLOYMENT_MODE`         | `direct` (default) or durable `batch` delivery                                                     | no       |
+| `DEPLOYMENT_ENVIRONMENT`  | Exact GitLab environment filter; unset accepts every environment                                   | no       |
+| `WORKER_COUNT`            | Batch workers, from 1 through 16; default: `2`                                                     | no       |
+| `MAX_ARTIFACT_BYTES`      | Maximum compressed artifact bytes; default: 1 GiB                                                  | no       |
+| `MAX_EXTRACTED_BYTES`     | Maximum total extracted bytes; default: 2 GiB                                                      | no       |
+| `MAX_ARTIFACT_FILES`      | Maximum ZIP entries; default: `1000`                                                               | no       |
+
+The `.env` file is optional. Environment variables supplied by Docker, Compose, or the process manager are sufficient. An existing malformed `.env` or invalid configuration stops startup.
+
+### Durable batch mode
+
+Set `DEPLOYMENT_MODE=batch` to download each successful deployment artifact by the exact `project.id` and `deployable_id` received from GitLab. Batch mode rejects `USE_JOB_NAME=yes`, `PROJECT_ID`, and `POST_DEPLOYMENT_COMMAND` because those options would weaken the one-event/one-artifact handoff.
+
+`DESTINATION_PATH` becomes a persistent spool with these directories:
+
+- `pending/`: accepted events waiting for an attempt.
+- `processing/`: private in-progress downloads and extraction.
+- `ready/<batch-id>/`: atomically completed, never subsequently modified by this service.
+- `quarantine/`: permanent failures or batches that exhausted eight attempts.
+- `state/`: durable JSON journals used for idempotency and restart recovery.
+
+Network failures and HTTP 408, 429, and 5xx responses retry with exponential delays from 5 seconds up to 15 minutes. Other 4xx responses, invalid ZIPs, traversal paths, links, special files, duplicate paths, and configured size/count violations are quarantined. Interrupted `processing` batches return to `pending` on restart. To retry a quarantined deployment, an operator must remove or archive both its quarantine directory and matching `state/<batch-id>.json`, then redeliver the webhook; never edit a ready batch in place.
+
+Every ready directory contains the extracted regular files plus `batch.json`, with GitLab identity, commit metadata, artifact SHA-256/size, total extracted size, and a per-file SHA-256 inventory. A downstream consumer may atomically move a directory out of `ready/`; the deployer's durable terminal record intentionally remains for webhook idempotency and restart recovery. The consumer must copy the claimed batch to publisher-owned storage outside the deployer/container mount, then validate and publish that exact copy. Do not mount signing keys or repository write access into this service.
+
+Example batch environment:
+
+```dotenv
+GITLAB_SECRET_TOKEN=replace-me
+GITLAB_HOSTNAME=gitlab.example.org
+ACCESS_TOKEN=replace-me
+DEPLOYMENT_MODE=batch
+DEPLOYMENT_ENVIRONMENT=winegui-apt-repository
+DESTINATION_PATH=/app/spool
+WORKER_COUNT=2
+```
+
+Start the batch Compose profile with a persistent `./spool`. It uses the same
+`latest` image tag as the existing production deployment by default:
+
+```sh
+docker compose --profile batch up -d artifact-deployer-batch
+```
+
+### HTTP contract and health
+
+- `POST /gitlab` returns `202` and a stable `batch_id` only after a new batch event is durable.
+- Ignored events and idempotent duplicates return `200` with a machine-readable reason or state.
+- Malformed JSON, an invalid token, and a wrong method return `400`, `401`, and `405` respectively.
+- `GET /healthz` reports process liveness. `GET /readyz` reports batch worker/spool readiness and aggregate state counts without payloads or credentials.
 
 _Hint:_ Adapt the `.env` file to your settings (eg. `GITLAB_SECRET_TOKEN`), read the section below: "Adding GitLab Webhook". As long as this token will match the token you will give it during the webhook setup, everything should be fine.
 
