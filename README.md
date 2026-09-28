@@ -98,7 +98,7 @@ _Hint:_ You can create a personal access token at your GitLab profile, when you 
 
 #### Docker Compose
 
-You can use the [prebuild Docker image from Dockerhub](https://hub.docker.com/r/danger89/gitlab-deployer-go). Optionally, build your own Docker image using the [Dockerfile](Dockerfile).
+You can use the published image at `registry.melroy.org/melroy/gitlab-artifact-deployer-go/artifact-deployer:latest`. Versioned releases also publish the same image under their release tag. Optionally, build your own image using the [Dockerfile](Dockerfile).
 
 In production we use Docker Compose, see [compose.yaml](compose.yaml) file to start the Docker container leveraging Docker Compose. It's advised to run the service behind a reverse proxy (eg. Nginx).
 
@@ -114,7 +114,7 @@ Otherwise the GitLab Artifact Deployer is unable to extract the downloaded artif
 Instead of using Docker Compose, you could also use `docker run` but that is **not** advised. Anyway, here is an example of `docker run` command:
 
 ```sh
-docker run -it -v $(pwd)/.env:/app/.env -v $(pwd)/deployment:/app/dest -p 3042:3042  --rm danger89/gitlab-deployer-go:latest
+docker run -it -v $(pwd)/.env:/app/.env -v $(pwd)/deployment:/app/dest -p 3042:3042 --rm registry.melroy.org/melroy/gitlab-artifact-deployer-go/artifact-deployer:latest
 ```
 
 _Note:_ Be sure you set the correct rights to the `deployment` folder (UID: 1000, GUID: 1000): `sudo chown 1000:1000 -R ./deployment/`

@@ -14,6 +14,7 @@ variables:
 stages:
   - test
   - build
+  - publish
 
 format:
   stage: test
@@ -44,3 +45,41 @@ build:
   stage: build
   script:
     - go build ./...
+
+# The available Docker executor runners do not expose a Docker daemon.
+# BuildKit publishes from the Dockerfile without privileged Docker-in-Docker.
+docker-release:
+  stage: publish
+  image:
+    name: moby/buildkit:rootless
+    entrypoint: [""]
+  cache: []
+  interruptible: false
+  variables:
+    BUILDKITD_FLAGS: --oci-worker-no-process-sandbox
+  rules:
+    - if: '$CI_PROJECT_PATH == "melroy/gitlab-artifact-deployer-go" && $CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/'
+    - if: '$CI_PROJECT_PATH == "melroy/gitlab-artifact-deployer-go" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: manual
+      allow_failure: true
+  script:
+    - |
+      set -eu
+      image="${CI_REGISTRY_IMAGE}/artifact-deployer"
+      mkdir -p "$HOME/.docker"
+      auth="$(printf '%s:%s' "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD" | base64 | tr -d '\n')"
+      printf '{"auths":{"%s":{"auth":"%s"}}}\n' "$CI_REGISTRY" "$auth" > "$HOME/.docker/config.json"
+      if [ -n "${CI_COMMIT_TAG:-}" ]; then
+        version="$CI_COMMIT_TAG"
+        output="type=image,\"name=${image}:${version},${image}:latest\",push=true"
+      else
+        version="ci-${CI_COMMIT_SHORT_SHA}"
+        output="type=image,name=${image}:${version},push=true"
+      fi
+      buildctl-daemonless.sh build \
+        --frontend dockerfile.v0 \
+        --local context=. \
+        --local dockerfile=. \
+        --opt "build-arg:VERSION=${version}" \
+        --opt "build-arg:VCS_REF=${CI_COMMIT_SHA}" \
+        --output "$output"
