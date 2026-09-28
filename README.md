@@ -40,7 +40,7 @@ See below for all the available options, only the `GITLAB_SECRET_TOKEN` environm
 | `WORKER_COUNT`            | Batch workers, from 1 through 16; default: `2`                                                     | no       |
 | `MAX_ARTIFACT_BYTES`      | Maximum compressed artifact bytes; default: 1 GiB                                                  | no       |
 | `MAX_EXTRACTED_BYTES`     | Maximum total extracted bytes; default: 2 GiB                                                      | no       |
-| `MAX_ARTIFACT_FILES`      | Maximum ZIP entries; default: `1000`                                                               | no       |
+| `MAX_ARTIFACT_FILES`      | Maximum ZIP entries; default: `3000`                                                               | no       |
 
 The `.env` file is optional. Environment variables supplied by Docker, Compose, or the process manager are sufficient. An existing malformed `.env` or invalid configuration stops startup.
 

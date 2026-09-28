@@ -93,7 +93,7 @@ func readConfig(get func(string) string) (Config, error) {
 	if err != nil {
 		return c, err
 	}
-	n, err = number("MAX_ARTIFACT_FILES", 1000, 1000000)
+	n, err = number("MAX_ARTIFACT_FILES", 3000, 1000000)
 	if err != nil {
 		return c, err
 	}

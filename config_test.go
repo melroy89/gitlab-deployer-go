@@ -17,6 +17,9 @@ func TestConfigDefaultsPreserveDirectMode(t *testing.T) {
 	if c.Mode != "direct" || c.Host != "gitlab.com" || c.Destination != "dest" || c.JobName != "deploy" || c.Branch != "main" {
 		t.Fatalf("unexpected defaults: %#v", c)
 	}
+	if c.MaxFiles != 3000 {
+		t.Fatalf("default maximum ZIP entries = %d, want 3000", c.MaxFiles)
+	}
 }
 
 func TestConfigValidation(t *testing.T) {
