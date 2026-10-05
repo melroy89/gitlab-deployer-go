@@ -39,11 +39,9 @@ func newProcessor(config Config, store *Store, downloader *Downloader) *Processo
 func (p *Processor) Start(ctx context.Context) {
 	p.running.Store(true)
 	for range p.config.Workers {
-		p.wg.Add(1)
-		go p.worker(ctx)
+		p.wg.Go(func() { p.worker(ctx) })
 	}
-	p.wg.Add(1)
-	go p.scheduler(ctx)
+	p.wg.Go(func() { p.scheduler(ctx) })
 }
 
 func (p *Processor) Wait() { p.wg.Wait() }
@@ -58,7 +56,6 @@ func (p *Processor) Notify() {
 func (p *Processor) Ready() bool { return p.running.Load() && !p.fatal.Load() }
 
 func (p *Processor) scheduler(ctx context.Context) {
-	defer p.wg.Done()
 	defer p.running.Store(false)
 	ticker := time.NewTicker(p.config.ScanInterval)
 	defer ticker.Stop()
@@ -98,7 +95,6 @@ func (p *Processor) unqueue(id string) {
 }
 
 func (p *Processor) worker(ctx context.Context) {
-	defer p.wg.Done()
 	for {
 		select {
 		case <-ctx.Done():
@@ -125,8 +121,7 @@ func (p *Processor) process(ctx context.Context, id string) {
 		log.Printf("batch=%s state=ready", id)
 		return
 	}
-	var completionErr *completionStateError
-	if errors.As(err, &completionErr) {
+	if _, ok := errors.AsType[*completionStateError](err); ok {
 		p.supervisorError(id, fmt.Errorf("ready handoff requires restart reconciliation: %w", err))
 		return
 	}

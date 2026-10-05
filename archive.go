@@ -2,14 +2,16 @@ package main
 
 import (
 	"archive/zip"
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path"
-	"sort"
+	"slices"
 	"strings"
 	"syscall"
 )
@@ -25,7 +27,7 @@ func archiveName(f *zip.File) (string, error) {
 	if name == "" || strings.ContainsAny(name, "\\:\x00") || strings.HasPrefix(name, "/") || path.Clean(name) != name {
 		return "", permanent("unsafe archive path")
 	}
-	for _, part := range strings.Split(name, "/") {
+	for part := range strings.SplitSeq(name, "/") {
 		if part == "." || part == ".." {
 			return "", permanent("unsafe archive path")
 		}
@@ -209,11 +211,9 @@ func extractArchive(ctx context.Context, filename, destination string, c Config,
 		files = append(files, InventoryFile{name, n, fmt.Sprintf("%x", h.Sum(nil))})
 	}
 	// Sync children before their parents, including implicit archive directories.
-	ordered := make([]string, 0, len(dirs))
-	for p := range dirs {
-		ordered = append(ordered, p)
-	}
-	sort.Sort(sort.Reverse(sort.StringSlice(ordered)))
+	ordered := slices.SortedFunc(maps.Keys(dirs), func(a, b string) int {
+		return cmp.Compare(b, a)
+	})
 	for _, p := range ordered {
 		d, err := root.Open(p)
 		if err != nil {
@@ -228,6 +228,6 @@ func extractArchive(ctx context.Context, filename, destination string, c Config,
 			return nil, total, closeErr
 		}
 	}
-	sort.Slice(files, func(i, j int) bool { return files[i].Path < files[j].Path })
+	slices.SortFunc(files, func(a, b InventoryFile) int { return cmp.Compare(a.Path, b.Path) })
 	return files, total, nil
 }

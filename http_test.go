@@ -31,8 +31,7 @@ func webhookRequest(t *testing.T, handler http.Handler, method, token string, bo
 func TestWebhookValidationAndFiltering(t *testing.T) {
 	c := testConfig(t.TempDir())
 	c.Environment = "production"
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	app, err := newApp(ctx, c)
 	if err != nil {
 		t.Fatal(err)
@@ -83,7 +82,7 @@ func TestWebhookValidationAndFiltering(t *testing.T) {
 
 func TestBatchWebhookAcceptanceAndDuplicate(t *testing.T) {
 	c := testConfig(t.TempDir())
-	app, err := newApp(context.Background(), c)
+	app, err := newApp(t.Context(), c)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +111,8 @@ func TestBatchWebhookAcceptanceAndDuplicate(t *testing.T) {
 
 func TestHealthAndReadiness(t *testing.T) {
 	c := testConfig(t.TempDir())
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
+	t.Cleanup(cancel)
 	app, err := newApp(ctx, c)
 	if err != nil {
 		t.Fatal(err)
@@ -141,7 +141,7 @@ func TestHealthAndReadiness(t *testing.T) {
 
 func TestUnsetEnvironmentAcceptsMissingEnvironment(t *testing.T) {
 	c := testConfig(t.TempDir())
-	app, err := newApp(context.Background(), c)
+	app, err := newApp(t.Context(), c)
 	if err != nil {
 		t.Fatal(err)
 	}

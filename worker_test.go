@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 )
 
@@ -22,10 +23,37 @@ func startTestProcessor(t *testing.T, handler http.Handler) (*Store, *Processor,
 		t.Fatal(err)
 	}
 	processor := newProcessor(c, store, d)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	processor.Start(ctx)
 	t.Cleanup(func() { cancel(); processor.Wait(); server.Close() })
 	return store, processor, cancel, server
+}
+
+func TestProcessorStopsWhenIdle(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		c := testConfig(t.TempDir())
+		c.Workers = 3
+		store, err := openStore(c.Destination)
+		if err != nil {
+			t.Fatal(err)
+		}
+		processor := newProcessor(c, store, newDownloader(c))
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		processor.Start(ctx)
+		synctest.Wait()
+		processor.Notify()
+		synctest.Wait()
+		synctest.Sleep(c.ScanInterval)
+		if !processor.Ready() {
+			t.Fatal("idle processor is not ready")
+		}
+		cancel()
+		processor.Wait()
+		if processor.Ready() {
+			t.Fatal("stopped processor is still ready")
+		}
+	})
 }
 
 func TestProcessorPublishesCompleteBatchOnce(t *testing.T) {

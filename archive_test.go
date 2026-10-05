@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -37,6 +38,25 @@ func TestExtractArchiveValidBatch(t *testing.T) {
 	info, _ := os.Stat(filepath.Join(destination, "dist", "app.txt"))
 	if info.Mode().Perm() != 0644 {
 		t.Fatalf("file mode = %o", info.Mode().Perm())
+	}
+}
+
+func TestExtractArchiveSortsInventory(t *testing.T) {
+	archive := writeArchive(t, makeZIP(t,
+		zipEntry{name: "z/deep/app", body: "last"},
+		zipEntry{name: "a/empty"},
+		zipEntry{name: "a/app", body: "first"},
+	))
+	files, size, err := extractArchive(t.Context(), archive, t.TempDir(), testConfig(""), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var paths []string
+	for _, file := range files {
+		paths = append(paths, file.Path)
+	}
+	if size != 9 || !slices.Equal(paths, []string{"a/app", "a/empty", "z/deep/app"}) {
+		t.Fatalf("unexpected inventory: size=%d files=%#v", size, files)
 	}
 }
 

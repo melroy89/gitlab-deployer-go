@@ -182,7 +182,18 @@ Finally, check the trigger called "Deployment events" where the webhook should t
 
 ### Requirements
 
-- [Golang](https://go.dev/doc/install)
+- [Go 1.27 or later](https://go.dev/doc/install) (Docker and CI use Go 1.27.1).
+
+### Checks
+
+```sh
+go test ./...
+go test -race ./...
+go vet ./...
+go mod tidy -diff
+```
+
+To review suggested code modernisations before applying them, run `go fix -diff ./...`.
 
 ### Start dev
 

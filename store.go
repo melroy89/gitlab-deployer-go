@@ -9,7 +9,7 @@ import (
 	pathpkg "path"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -271,7 +271,7 @@ func (s *Store) Due(now time.Time) []string {
 			ids = append(ids, id)
 		}
 	}
-	sort.Strings(ids)
+	slices.Sort(ids)
 	return ids
 }
 

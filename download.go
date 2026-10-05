@@ -18,7 +18,10 @@ type permanentError struct{ reason string }
 
 func (e *permanentError) Error() string { return e.reason }
 func permanent(reason string) error     { return &permanentError{reason} }
-func isPermanent(err error) bool        { var p *permanentError; return errors.As(err, &p) }
+func isPermanent(err error) bool {
+	_, ok := errors.AsType[*permanentError](err)
+	return ok
+}
 
 type Downloader struct {
 	config  Config
