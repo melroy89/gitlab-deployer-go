@@ -135,7 +135,7 @@ func TestDockerSmoke(t *testing.T) {
 		port := strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)
 		_ = listener.Close()
 		name := fmt.Sprintf("artifact-smoke-%d-%s", os.Getpid(), port)
-		args := []string{"run", "-d", "--name", name, "--label", "org.melroy.artifact-deployer.smoke-run=" + runID, "--network", "host", "--user", fmt.Sprintf("%d:%d", os.Getuid(), os.Getgid()),
+		args := []string{"run", "-d", "--name", name, "--label", "org.melroy.artifact-deployer.smoke-run=" + runID, "--network", "host", "--userns", "host", "--user", fmt.Sprintf("%d:%d", os.Getuid(), os.Getgid()),
 			"--mount", "type=bind,src=" + root + ",dst=/smoke",
 			"-e", "GITLAB_SECRET_TOKEN=smoke-secret", "-e", "ACCESS_TOKEN=smoke-artifact-token",
 			"-e", "GITLAB_HOSTNAME=" + strings.TrimPrefix(fixture.URL, "https://"),

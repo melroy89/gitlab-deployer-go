@@ -25,7 +25,8 @@ mkdir -p "$smoke_dir/tmp" "$smoke_dir/go" "$smoke_dir/cache"
 
 # The shell runner needs Docker only. The candidate image supplies Go; identical
 # host/container paths allow its tests to create bind mounts via the host daemon.
-docker run --rm --network host \
+# Host networking needs per-container userns=host on remapping-enabled daemons.
+docker run --rm --network host --userns host \
     --label "$smoke_label" \
     --user "$(id -u):$(id -g)" \
     --group-add "$(stat -c %g /var/run/docker.sock)" \
