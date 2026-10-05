@@ -44,6 +44,8 @@ See below for all the available options, only the `GITLAB_SECRET_TOKEN` environm
 
 The `.env` file is optional. Environment variables supplied by Docker, Compose, or the process manager are sufficient. An existing malformed `.env` or invalid configuration stops startup.
 
+ZIP paths must be valid UTF-8. Invalid paths are rejected before extraction in both deployment modes.
+
 ### Durable batch mode
 
 Set `DEPLOYMENT_MODE=batch` to download each successful deployment artifact by the exact `project.id` and `deployable_id` received from GitLab. Batch mode rejects `USE_JOB_NAME=yes`, `PROJECT_ID`, and `POST_DEPLOYMENT_COMMAND` because those options would weaken the one-event/one-artifact handoff.
@@ -86,6 +88,8 @@ docker compose --profile batch up -d artifact-deployer-batch
 - `POST /gitlab` returns `202` and a stable `batch_id` only after a new batch event is durable.
 - Ignored events and idempotent duplicates return `200` with a machine-readable reason or state.
 - Malformed JSON, an invalid token, and a wrong method return `400`, `401`, and `405` respectively.
+- Webhook JSON uses exact field names and rejects duplicate names, invalid UTF-8, trailing documents, and bodies over 1 MiB. Additional GitLab fields are ignored.
+- JSON response encoding failures return `500` with reason `encoding_failed`.
 - `GET /healthz` reports process liveness. `GET /readyz` reports batch worker/spool readiness and aggregate state counts without payloads or credentials.
 
 _Hint:_ Adapt the `.env` file to your settings (eg. `GITLAB_SECRET_TOKEN`), read the section below: "Adding GitLab Webhook". As long as this token will match the token you will give it during the webhook setup, everything should be fine.
@@ -182,7 +186,7 @@ Finally, check the trigger called "Deployment events" where the webhook should t
 
 ### Requirements
 
-- [Go 1.27 or later](https://go.dev/doc/install) (Docker and CI use Go 1.27.1).
+- [Go 1.27 or later](https://go.dev/doc/install).
 
 ### Checks
 
@@ -192,8 +196,6 @@ go test -race ./...
 go vet ./...
 go mod tidy -diff
 ```
-
-To review suggested code modernisations before applying them, run `go fix -diff ./...`.
 
 ### Start dev
 

@@ -69,6 +69,7 @@ func TestArchivePolicyRejections(t *testing.T) {
 		{"cleaned traversal", []zipEntry{{name: "a/../escape", body: "x"}}},
 		{"absolute", []zipEntry{{name: "/escape", body: "x"}}},
 		{"backslash", []zipEntry{{name: `a\\b`, body: "x"}}},
+		{"invalid UTF-8", []zipEntry{{name: "bad-\xff", body: "x"}}},
 		{"reserved manifest", []zipEntry{{name: "batch.json", body: "x"}}},
 		{"duplicate", []zipEntry{{name: "a", body: "x"}, {name: "a", body: "y"}}},
 		{"file parent", []zipEntry{{name: "a", body: "x"}, {name: "a/b", body: "y"}}},
@@ -83,6 +84,34 @@ func TestArchivePolicyRejections(t *testing.T) {
 				t.Fatalf("expected permanent policy error, got %v", err)
 			}
 		})
+	}
+}
+
+func TestArchiveUTF8Paths(t *testing.T) {
+	name := "日本語/パッケージ.deb"
+	archive := writeArchive(t, makeZIP(t, zipEntry{name: name, body: "package"}))
+	destination := t.TempDir()
+	files, _, err := extractArchive(t.Context(), archive, destination, testConfig(""), false)
+	if err != nil || len(files) != 1 || files[0].Path != name {
+		t.Fatalf("Unicode path changed: files=%v err=%v", files, err)
+	}
+	data, err := os.ReadFile(filepath.Join(destination, name))
+	if err != nil || string(data) != "package" {
+		t.Fatalf("Unicode extraction failed: %q err=%v", data, err)
+	}
+	archive = writeArchive(t, makeZIP(t,
+		zipEntry{name: "valid", body: "first"},
+		zipEntry{name: "invalid-\xff", body: "second"},
+	))
+	for _, overwrite := range []bool{false, true} {
+		destination = t.TempDir()
+		if _, _, err := extractArchive(t.Context(), archive, destination, testConfig(""), overwrite); err == nil || !isPermanent(err) {
+			t.Fatalf("invalid UTF-8 path was not a permanent error: %v", err)
+		}
+		entries, err := os.ReadDir(destination)
+		if err != nil || len(entries) != 0 {
+			t.Fatalf("destination touched before validation: entries=%v err=%v", entries, err)
+		}
 	}
 }
 

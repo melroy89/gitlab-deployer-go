@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"net/url"
@@ -407,9 +407,7 @@ func (s *Store) writeRecord(record *BatchRecord) error {
 		cleanup()
 		return err
 	}
-	encoder := json.NewEncoder(tmp)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(record); err != nil {
+	if err := marshalJSONFile(tmp, record); err != nil {
 		_ = tmp.Close()
 		cleanup()
 		return err
@@ -435,9 +433,7 @@ func writeJSONFile(path string, value any, perm os.FileMode) error {
 	if err != nil {
 		return err
 	}
-	encoder := json.NewEncoder(f)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(value); err != nil {
+	if err := marshalJSONFile(f, value); err != nil {
 		_ = f.Close()
 		return err
 	}

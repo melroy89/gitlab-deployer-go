@@ -54,7 +54,7 @@ type BatchRecord struct {
 	NextAttemptAt *time.Time    `json:"next_attempt_at,omitempty"`
 	LastError     string        `json:"last_error,omitempty"`
 	Artifact      *DownloadInfo `json:"artifact,omitempty"`
-	ExtractedSize int64         `json:"extracted_bytes,omitempty"`
+	ExtractedSize int64         `json:"extracted_bytes,omitzero"`
 }
 
 type BatchManifest struct {

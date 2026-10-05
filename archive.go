@@ -14,6 +14,7 @@ import (
 	"slices"
 	"strings"
 	"syscall"
+	"unicode/utf8"
 )
 
 type InventoryFile struct {
@@ -24,6 +25,9 @@ type InventoryFile struct {
 
 func archiveName(f *zip.File) (string, error) {
 	name := strings.TrimSuffix(f.Name, "/")
+	if !utf8.ValidString(name) {
+		return "", permanent("invalid UTF-8 archive path")
+	}
 	if name == "" || strings.ContainsAny(name, "\\:\x00") || strings.HasPrefix(name, "/") || path.Clean(name) != name {
 		return "", permanent("unsafe archive path")
 	}

@@ -4,9 +4,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/subtle"
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
-	"io"
 	"log"
 	"net/http"
 	"time"
@@ -92,14 +91,8 @@ func (a *App) gitlabHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
-	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxWebhookBody))
 	var payload GitLabPayload
-	if err := decoder.Decode(&payload); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_json")
-		return
-	}
-	var trailing any
-	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+	if err := json.UnmarshalRead(http.MaxBytesReader(w, r.Body, maxWebhookBody), &payload); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
@@ -156,7 +149,12 @@ func writeError(w http.ResponseWriter, status int, reason string) {
 }
 
 func writeJSON(w http.ResponseWriter, status int, value any) {
+	data, err := json.Marshal(value)
+	if err != nil {
+		status = http.StatusInternalServerError
+		data = []byte(`{"status":"error","reason":"encoding_failed"}`)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(value)
+	_, _ = w.Write(append(data, '\n'))
 }
