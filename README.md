@@ -197,6 +197,18 @@ go vet ./...
 go mod tidy -diff
 ```
 
+For a container smoke test on Linux with Docker:
+
+```sh
+docker build -t artifact-deployer:smoke .
+./scripts/docker-smoke.sh artifact-deployer:smoke
+```
+
+To test an existing image, pass its tag to the script instead of building.
+The test uses temporary storage and a local HTTPS artifact fixture, checks direct
+and batch delivery plus restart recovery, and removes its test containers.
+Go runs inside the image, so the script only requires Docker on the host.
+
 ### Start dev
 
 Either run: `go run .`
