@@ -1,5 +1,5 @@
 default:
-  image: golang:1.27.1-trixie
+  image: golang:1.27.4-trixie
 
   cache:
     key:
@@ -59,7 +59,7 @@ docker-smoke:
       set -eu
       candidate="artifact-deployer-ci:${CI_PROJECT_ID}-${CI_JOB_ID}"
       trap 'docker image rm "$candidate" >/dev/null 2>&1 || true' EXIT
-      docker build --tag "$candidate" \
+      docker build --pull --no-cache --tag "$candidate" \
         --build-arg "VERSION=ci-${CI_COMMIT_SHORT_SHA}" \
         --build-arg "VCS_REF=${CI_COMMIT_SHA}" .
       ./scripts/docker-smoke.sh "$candidate"
@@ -90,7 +90,7 @@ docker-release:
       else
         version="ci-${CI_COMMIT_SHORT_SHA}"
       fi
-      docker build --tag "$candidate" \
+      docker build --pull --no-cache --tag "$candidate" \
         --build-arg "VERSION=${version}" \
         --build-arg "VCS_REF=${CI_COMMIT_SHA}" .
       ./scripts/docker-smoke.sh "$candidate"
