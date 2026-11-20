@@ -1,6 +1,6 @@
 FROM golang:1.27.4-trixie AS go-toolchain
 
-FROM php:8.5-cli-trixie
+FROM php:8.6-cli-trixie
 
 COPY --from=go-toolchain /usr/local/go /usr/local/go
 ENV PATH="/usr/local/go/bin:${PATH}"
@@ -15,10 +15,10 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /app
 
-# PHP CLI includes mbstring and XML. Add the remaining post-deployment extensions.
+# PHP CLI includes XML. Add the remaining post-deployment extensions.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends curl git openssh-client wget libicu-dev libzip-dev \
- && docker-php-ext-install -j "$(nproc)" intl zip \
+ && apt-get install -y --no-install-recommends curl git openssh-client wget libicu-dev libonig-dev libzip-dev \
+ && docker-php-ext-install -j "$(nproc)" intl mbstring zip \
  && rm -rf /var/lib/apt/lists/*
 
 COPY go.mod go.sum ./
