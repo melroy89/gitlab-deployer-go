@@ -59,7 +59,7 @@ docker-smoke:
       set -eu
       candidate="artifact-deployer-ci:${CI_PROJECT_ID}-${CI_JOB_ID}"
       trap 'docker image rm "$candidate" >/dev/null 2>&1 || true' EXIT
-      docker build --pull --no-cache --tag "$candidate" \
+      docker build --pull --tag "$candidate" \
         --build-arg "VERSION=ci-${CI_COMMIT_SHORT_SHA}" \
         --build-arg "VCS_REF=${CI_COMMIT_SHA}" .
       ./scripts/docker-smoke.sh "$candidate"

@@ -5,12 +5,6 @@ FROM php:8.6-cli-trixie
 COPY --from=go-toolchain /usr/local/go /usr/local/go
 ENV PATH="/usr/local/go/bin:${PATH}"
 
-ARG VERSION=development
-ARG VCS_REF=unknown
-
-LABEL org.opencontainers.image.version=$VERSION \
-      org.opencontainers.image.revision=$VCS_REF
-
 ARG DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /app
@@ -27,6 +21,12 @@ RUN go mod download && go mod verify
 COPY *.go ./
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /app/artifact-deployer
+
+ARG VERSION=development
+ARG VCS_REF=unknown
+
+LABEL org.opencontainers.image.version=$VERSION \
+      org.opencontainers.image.revision=$VCS_REF
 
 EXPOSE 3042
 
