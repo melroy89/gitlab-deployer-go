@@ -139,15 +139,42 @@ func TestProcessorQuarantinesPermanentFailure(t *testing.T) {
 }
 
 func TestProcessorQuarantinesAfterEightTransientFailures(t *testing.T) {
+	c := testConfig(t.TempDir())
 	var requests atomic.Int32
-	store, processor, _, _ := startTestProcessor(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	downloader, server := testDownloader(t, c, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		requests.Add(1)
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}))
-	record, _, _ := store.Accept(testPayload(), time.Now())
-	processor.Notify()
-	failed := waitForState(t, store, record.BatchID, stateQuarantine)
-	if failed.Attempts != maxAttempts || requests.Load() != maxAttempts {
-		t.Fatalf("attempts=%d requests=%d", failed.Attempts, requests.Load())
+	defer server.Close()
+
+	store, err := openStore(c.Destination)
+	if err != nil {
+		t.Fatal(err)
+	}
+	processor := newProcessor(c, store, downloader)
+	now := time.Now().UTC()
+	processor.now = func() time.Time { return now }
+
+	record, _, err := store.Accept(testPayload(), now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := record.BatchID
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		processor.process(t.Context(), id)
+		record, ok := store.Record(id)
+		if !ok || record.Attempts != attempt || requests.Load() != int32(attempt) {
+			t.Fatalf("after attempt %d: record=%#v requests=%d", attempt, record, requests.Load())
+		}
+		if attempt == maxAttempts {
+			if record.State != stateQuarantine || record.NextAttemptAt != nil {
+				t.Fatalf("after final attempt: record=%#v", record)
+			}
+			break
+		}
+		if record.State != statePending || record.NextAttemptAt == nil || !record.NextAttemptAt.After(now) {
+			t.Fatalf("after attempt %d: expected a pending retry, got %#v", attempt, record)
+		}
+		now = *record.NextAttemptAt
 	}
 }
